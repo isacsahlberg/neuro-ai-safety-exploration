@@ -57,7 +57,7 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #6c7086;
+      color: #a6adc8;
       border-bottom: 1px solid #313244;
     }
 
@@ -74,8 +74,8 @@
       margin-top: auto;
       padding: 20px 24px;
       font-size: 11px;
-      color: #45475a;
-      border-top: 1px solid #313244;
+      color: #a6adc8;
+      border-top: 1px solid #45475a;
       line-height: 1.6;
     }
 
@@ -921,11 +921,11 @@
         <h2>1. Adaptive activation functions</h2>
         <p>The Hodgkin-Huxley model captures spike-frequency adaptation through gating variables. A simplified adaptive unit has a state \(a\) that tracks recent activity:</p>
         <div class="math-block">
-          \[y = \sigma(x - a), \qquad 	au_a rac{da}{dt} = -a + lpha\, y\]
+          \[y = \sigma(x - a), \qquad \tau_a \frac{da}{dt} = -a + \alpha\, y\]
         </div>
         <p>The adaptation variable \(a\) grows when the unit is active and decays otherwise, effectively raising the threshold after sustained firing. In discrete time for an artificial network:</p>
         <div class="math-block">
-          \[y_t = \sigma(x_t - a_t), \qquad a_{t+1} = (1 - 1/	au_a)\,a_t + (lpha/	au_a)\,y_t\]
+          \[y_t = \sigma(x_t - a_t), \qquad a_{t+1} = (1 - 1/\tau_a)\,a_t + (\alpha/\tau_a)\,y_t\]
         </div>
         <p>This produces units that respond strongly to novel input and habituate to sustained input — a form of local contrast enhancement. The stability benefit is that no unit can indefinitely dominate: sustained high activation raises \(a\), reducing output, creating negative feedback at the unit level.</p>
 
@@ -943,47 +943,47 @@
         <div class="math-block">
           \[\delta \dot{h} = J(t)\, \delta h, \qquad J(t) = J(t + T)\]
         </div>
-        <p>where \(J(t)\) is the time-periodic Jacobian. The Floquet multipliers \(\{ho_i\}_{i=1}^n\) are the eigenvalues of the monodromy matrix \(M = \mathcal{T}\exp\!\int_0^T J(t)\,dt\). The limit cycle is asymptotically stable iff all \(|ho_i| &lt; 1\) (one multiplier is always exactly 1, corresponding to perturbations along the orbit).</p>
+        <p>where \(J(t)\) is the time-periodic Jacobian. The Floquet multipliers \(\{\rho_i\}_{i=1}^n\) are the eigenvalues of the monodromy matrix \(M = \mathcal{T}\exp\!\int_0^T J(t)\,dt\). The limit cycle is asymptotically stable iff all \(|\rho_i| &lt; 1\) (one multiplier is always exactly 1, corresponding to perturbations along the orbit).</p>
         <div class="callout tech">
-          <strong>For multi-agent loops:</strong> a system exhibiting limit-cycle dynamics would have context states \(h_t\) that are periodic over some cycle length \(T\): \(h_{t+T} pprox h_t\). Detecting whether a loop has settled into a limit cycle vs. a fixed point vs. chaotic dynamics is an empirical question — and each case has different implications for interpretability and control.
+          <strong>For multi-agent loops:</strong> a system exhibiting limit-cycle dynamics would have context states \(h_t\) that are periodic over some cycle length \(T\): \(h_{t+T} \approx h_t\). Detecting whether a loop has settled into a limit cycle vs. a fixed point vs. chaotic dynamics is an empirical question — and each case has different implications for interpretability and control.
         </div>
 
         <h2>3. Plasticity rules: STDP and homeostasis</h2>
-        <p><strong>Spike-timing dependent plasticity (STDP)</strong> modifies synaptic weight \(w_{ij}\) based on the relative timing \(\Delta t = t_{	ext{post}} - t_{	ext{pre}}\) of spikes:</p>
+        <p><strong>Spike-timing dependent plasticity (STDP)</strong> modifies synaptic weight \(w_{ij}\) based on the relative timing \(\Delta t = t_{\text{post}} - t_{\text{pre}}\) of spikes:</p>
         <div class="math-block">
-          \[\Delta w_{ij} = egin{cases} A_+ \exp(-\Delta t / 	au_+) &amp; \Delta t &gt; 0 	ext{ (pre before post: LTP)} \ -A_- \exp(\Delta t / 	au_-) &amp; \Delta t &lt; 0 	ext{ (post before pre: LTD)} \end{cases}\]
+          \[\Delta w_{ij} = \begin{cases} A_+ \exp(-\Delta t / \tau_+) &amp; \Delta t &gt; 0 \text{ (pre before post: LTP)} \ -A_- \exp(\Delta t / \tau_-) &amp; \Delta t &lt; 0 \text{ (post before pre: LTD)} \end{cases}\]
         </div>
         <p>STDP implements a local form of causal credit assignment: if the presynaptic neuron fires before the postsynaptic one, it plausibly contributed to the output, so the connection strengthens. This is Hebbian but with a temporal asymmetry that gives it directionality.</p>
-        <p><strong>BCM rule</strong> (Bienenstock-Cooper-Munro) adds a sliding threshold \(	heta_M\):</p>
+        <p><strong>BCM rule</strong> (Bienenstock-Cooper-Munro) adds a sliding threshold \(\theta_M\):</p>
         <div class="math-block">
-          \[\dot{w}_{ij} = \phi(y_i,\, 	heta_M)\, x_j, \qquad \dot{	heta}_M = rac{1}{	au}\!\left(y_i^2 - 	heta_Might)\]
+          \[\dot{w}_{ij} = \phi(y_i,\, \theta_M)\, x_j, \qquad \dot{\theta}_M = \frac{1}{\tau}\!\left(y_i^2 - \theta_M\right)\]
         </div>
-        <p>where \(\phi(y, 	heta_M) = y(y - 	heta_M)\). The modification threshold \(	heta_M\) slides upward when the neuron is overactive (preventing further LTP) and downward when underactive (enabling LTP more easily). This is provably stable: it drives the neuron toward a target activity level. BCM explains orientation selectivity in visual cortex and is one of the best-understood examples of stable unsupervised learning.</p>
-        <p><strong>Homeostatic synaptic scaling</strong> is a multiplicative rule: all synaptic weights onto neuron \(i\) are scaled by a factor that depends on the neuron's long-run average firing rate \(\langle r_i angle\):</p>
+        <p>where \(\phi(y, \theta_M) = y(y - \theta_M)\). The modification threshold \(\theta_M\) slides upward when the neuron is overactive (preventing further LTP) and downward when underactive (enabling LTP more easily). This is provably stable: it drives the neuron toward a target activity level. BCM explains orientation selectivity in visual cortex and is one of the best-understood examples of stable unsupervised learning.</p>
+        <p><strong>Homeostatic synaptic scaling</strong> is a multiplicative rule: all synaptic weights onto neuron \(i\) are scaled by a factor that depends on the neuron's long-run average firing rate \(\langle r_i \rangle\):</p>
         <div class="math-block">
-          \[w_{ij} \leftarrow w_{ij} \cdot \left(rac{r_{	ext{target}}}{\langle r_i angle}ight)^eta\]
+          \[w_{ij} \leftarrow w_{ij} \cdot \left(\frac{r_{\text{target}}}{\langle r_i \rangle}\right)^\beta\]
         </div>
         <p>This is multiplicative (preserves relative weight structure) and global per-neuron (adjusts all incoming weights together). It maintains activity in a target range without disrupting learned selectivity — a clean separation between "what is represented" and "how strongly it is represented."</p>
 
         <h2>4. Predictive coding</h2>
-        <p>Rao &amp; Ballard's (1999) formulation of predictive coding defines a hierarchical network where each level \(\ell\) maintains a representation \(r_\ell\) and generates a prediction of the level below. Prediction errors \(arepsilon_\ell\) propagate upward:</p>
+        <p>Rao &amp; Ballard's (1999) formulation of predictive coding defines a hierarchical network where each level \(\ell\) maintains a representation \(r_\ell\) and generates a prediction of the level below. Prediction errors \(\varepsilon_\ell\) propagate upward:</p>
         <div class="math-block">
-          \[arepsilon_\ell = x_\ell - f_\ell(r_{\ell+1})\]
+          \[\varepsilon_\ell = x_\ell - f_\ell(r_{\ell+1})\]
         </div>
         <p>Representations are updated to minimize prediction error:</p>
         <div class="math-block">
-          \[\dot{r}_{\ell+1} \propto -rac{\partial}{\partial r_{\ell+1}} \left[\|arepsilon_\ell\|^2 + \|arepsilon_{\ell+1}\|^2ight]\]
+          \[\dot{r}_{\ell+1} \propto -\frac{\partial}{\partial r_{\ell+1}} \left[\|\varepsilon_\ell\|^2 + \|\varepsilon_{\ell+1}\|^2\right]\]
         </div>
-        <p>The system minimizes a free energy functional \(\mathcal{F} = \sum_\ell \|arepsilon_\ell\|^2 / \sigma_\ell^2\). Friston's active inference extends this to include action: the system can minimize prediction error either by updating its internal model or by acting on the world to make the world match its predictions.</p>
+        <p>The system minimizes a free energy functional \(\mathcal{F} = \sum_\ell \|\varepsilon_\ell\|^2 / \sigma_\ell^2\). Friston's active inference extends this to include action: the system can minimize prediction error either by updating its internal model or by acting on the world to make the world match its predictions.</p>
         <p>The connection to transformers is interesting: cross-attention between layers can be interpreted as a soft version of predictive coding, where higher-level representations query lower-level ones. But the directionality is different — in transformers, information flows forward; in predictive coding, predictions flow backward and errors flow forward. A hybrid architecture might have better self-correcting properties.</p>
 
         <h2>5. Modularity</h2>
         <p>Newman's modularity measure \(Q\) quantifies the degree to which a network decomposes into communities:</p>
         <div class="math-block">
-          \[Q = rac{1}{2m} \sum_{ij} \left[A_{ij} - rac{k_i k_j}{2m}ight] \delta(c_i, c_j)\]
+          \[Q = \frac{1}{2m} \sum_{ij} \left[A_{ij} - \frac{k_i k_j}{2m}\right] \delta(c_i, c_j)\]
         </div>
-        <p>where \(A_{ij}\) is the adjacency matrix, \(k_i\) is the degree of node \(i\), \(m = rac{1}{2}\sum_{ij} A_{ij}\) is the total edge weight, and \(\delta(c_i, c_j) = 1\) iff nodes \(i,j\) are in the same community. \(Q \in [-1, 1]\); brain networks typically have \(Q pprox 0.3	ext{–}0.5\).</p>
-        <p>For safety, modularity limits information propagation across the network. If a module \(C\) has a "misaligned" internal attractor, the damage it can do to the rest of the system is bounded by the inter-module connectivity \(|E(C, ar{C})|\). High-modularity networks are therefore more fault-tolerant and have smaller "blast radii" for localized failures.</p>
+        <p>where \(A_{ij}\) is the adjacency matrix, \(k_i\) is the degree of node \(i\), \(m = \frac{1}{2}\sum_{ij} A_{ij}\) is the total edge weight, and \(\delta(c_i, c_j) = 1\) iff nodes \(i,j\) are in the same community. \(Q \in [-1, 1]\); brain networks typically have \(Q \approx 0.3\text{–}0.5\).</p>
+        <p>For safety, modularity limits information propagation across the network. If a module \(C\) has a "misaligned" internal attractor, the damage it can do to the rest of the system is bounded by the inter-module connectivity \(|E(C, \bar{C})|\). High-modularity networks are therefore more fault-tolerant and have smaller "blast radii" for localized failures.</p>
         <p>Modern LLM mixture-of-experts (MoE) architectures have sparse gating that routes tokens to a subset of expert FFN layers — a form of dynamic modularity. The safety implications of MoE are underexplored: does expert specialization create meaningful functional modules, or is it primarily a computational efficiency trick?</p>
 
         <ul class="ref-list">

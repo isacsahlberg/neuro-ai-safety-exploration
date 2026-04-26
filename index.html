@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loops, Attractors &amp; Brains</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f9f9f7;
+      --surface: #ffffff;
+      --sidebar-bg: #1e1e2e;
+      --sidebar-text: #cdd6f4;
+      --sidebar-active: #cba6f7;
+      --sidebar-hover: #313244;
+      --accent: #7c3aed;
+      --accent-light: #ede9fe;
+      --text: #1c1c2e;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --math-bg: #f3f4f6;
+      --tech-accent: #0f766e;
+      --tech-accent-light: #f0fdfa;
+      --toggle-bg: #e5e7eb;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 230px;
+      min-width: 230px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .site-title {
+      padding: 28px 24px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6c7086;
+      border-bottom: 1px solid #313244;
+    }
+
+    .site-subtitle {
+      padding: 16px 24px 4px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #45475a;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 20px 24px;
+      font-size: 11px;
+      color: #45475a;
+      border-top: 1px solid #313244;
+      line-height: 1.6;
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 11px 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--sidebar-text);
+      transition: background 0.15s, color 0.15s;
+      border-left: 3px solid transparent;
+      line-height: 1.4;
+    }
+
+    .nav-item:hover {
+      background: var(--sidebar-hover);
+    }
+
+    .nav-item.active {
+      color: var(--sidebar-active);
+      border-left-color: var(--sidebar-active);
+      background: rgba(203, 166, 247, 0.08);
+      font-weight: 500;
+    }
+
+    /* ── Main area ── */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 40px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      min-height: 60px;
+    }
+
+    #page-label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ── Mode toggle ── */
+    .mode-toggle {
+      display: flex;
+      background: var(--toggle-bg);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .mode-btn {
+      padding: 6px 18px;
+      border: none;
+      border-radius: 6px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background: none;
+      color: var(--text-muted);
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+
+    .mode-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .mode-btn.active[data-mode="technical"] {
+      color: var(--tech-accent);
+    }
+
+    /* ── Content ── */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 48px 40px 64px;
+      max-width: 780px;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .page h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .page-tagline {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      font-style: italic;
+    }
+
+    .conceptual-content,
+    .technical-content {
+      display: none;
+    }
+
+    body.mode-conceptual .conceptual-content,
+    body.mode-technical .technical-content {
+      display: block;
+    }
+
+    /* ── Prose ── */
+    .prose p {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    .prose h2 {
+      font-size: 18px;
+      font-weight: 650;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .prose h3 {
+      font-size: 15px;
+      font-weight: 650;
+      margin-top: 28px;
+      margin-bottom: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Math blocks ── */
+    .math-block {
+      background: var(--math-bg);
+      border-left: 3px solid var(--tech-accent);
+      border-radius: 0 6px 6px 0;
+      padding: 16px 20px;
+      margin: 20px 0;
+      overflow-x: auto;
+      font-size: 15px;
+    }
+
+    .math-block .katex-display {
+      margin: 0;
+    }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 24px 0;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .callout.note {
+      background: var(--accent-light);
+      border-left: 4px solid var(--accent);
+      color: #3b0764;
+    }
+
+    .callout.tech {
+      background: var(--tech-accent-light);
+      border-left: 4px solid var(--tech-accent);
+      color: #134e4a;
+    }
+
+    .callout.warning {
+      background: #fef3c7;
+      border-left: 4px solid #d97706;
+      color: #78350f;
+    }
+
+    /* ── Concept cards (for Overview) ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 28px 0;
+    }
+
+    .concept-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .concept-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 12px rgba(124, 58, 237, 0.1);
+    }
+
+    .concept-card .card-title {
+      font-weight: 650;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--accent);
+    }
+
+    .concept-card .card-body {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Tech mode indicator ── */
+    body.mode-technical #page-label::after {
+      content: ' · Technical';
+      color: var(--tech-accent);
+    }
+
+    /* ── Code ── */
+    code {
+      font-family: 'SF Mono', 'Fira Mono', monospace;
+      font-size: 13px;
+      background: var(--math-bg);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--tech-accent);
+    }
+
+    /* ── Section divider ── */
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 36px 0;
+    }
+
+    /* ── Reference list ── */
+    .ref-list {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+
+    .ref-list li {
+      margin-bottom: 6px;
+      list-style: none;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .ref-list li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--text-muted);
+    }
+
+    /* ── Scrollbar ── */
+    #content::-webkit-scrollbar { width: 5px; }
+    #content::-webkit-scrollbar-track { background: transparent; }
+    #content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+  </style>
+</head>
+<body class="mode-conceptual">
+
+<nav id="sidebar">
+  <div class="site-title">Brain ↔ AI Loops</div>
+  <div class="site-subtitle">Pages</div>
+  <button class="nav-item active" data-page="overview">Overview</button>
+  <button class="nav-item" data-page="attractors">Attractor States</button>
+  <button class="nav-item" data-page="binding">The Binding Problem</button>
+  <button class="nav-item" data-page="hierarchy">Hierarchical Modulation</button>
+  <button class="nav-item" data-page="mech-interp">Mech Interp</button>
+  <button class="nav-item" data-page="limits">Limits of the Analogy</button>
+  <button class="nav-item" data-page="bio-stability">Biological Stability</button>
+  <button class="nav-item" data-page="qa">Open Questions</button>
+  <div class="sidebar-footer">
+    Vibed by I.S. &amp; Sonnet 4.6<br>
+    April 2026
+  </div>
+</nav>
+
+<div id="main">
+  <div id="topbar">
+    <span id="page-label">Overview</span>
+    <div class="mode-toggle">
+      <button class="mode-btn active" data-mode="conceptual">Conceptual</button>
+      <button class="mode-btn" data-mode="technical">Technical</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- ════════════════ OVERVIEW ════════════════ -->
+    <div class="page active" id="page-overview">
+      <h1>When AI Systems Start Looping</h1>
+      <p class="page-tagline">A structural analogy between multi-agent AI and recurrent neural dynamics — and what it might (and might not) teach us.</p>
+
+      <div class="conceptual-content prose">
+        <p>A standard transformer — the architecture underlying most modern language models — is a purely feedforward system. Given an input, it performs a fixed computation and produces output in a single pass. Each forward pass is independent. There is no internal loop, no persistent state, no iteration.</p>
+
+        <p>But something changes when you wire multiple models together, or when a model's output is fed back as its own input. This is exactly what happens in multi-agent AI systems, chain-of-thought pipelines, and tool-use frameworks where a model acts on its own output repeatedly. What was a feedforward graph becomes a loop.</p>
+
+        <p>From far enough away, this looks remarkably like what brains do. Neural activity in the cortex is not a one-shot feedforward computation — it is massively recurrent, with output from one region becoming input to another, over and over, until the system settles or produces a response. The brain is, at its core, a dynamical system running loops.</p>
+
+        <p>This structural similarity is the starting point for the ideas collected here. It doesn't hand us alignment solutions. But it opens up questions worth sitting with: what can the science of recurrent neural dynamics teach us about these new looping AI systems? Where do the analogies hold, and where do they break?</p>
+
+        <div class="callout note">
+          The analogy is most useful as a <strong>source of tools and intuitions</strong> for mechanistic interpretability — not as a blueprint for alignment. The brain wasn't optimized for the values we care about; it was shaped by evolutionary pressures that are largely orthogonal to them. But it is a richly studied example of a recurrent, goal-directed system, and some of what we've learned about it transfers — the mechanisms, not the values.
+        </div>
+
+        <h2>The four threads explored here</h2>
+
+        <div class="card-grid">
+          <div class="concept-card" onclick="navigateTo('attractors')">
+            <div class="card-title">Attractor States</div>
+            <div class="card-body">Stable configurations that looping systems converge to — and what it means for these attractors to be aligned or not.</div>
+          </div>
+          <div class="concept-card" onclick="navigateTo('binding')">
+            <div class="card-title">The Binding Problem</div>
+            <div class="card-body">How distributed, parallel processing produces coherent unified behavior — and what happens when it doesn't.</div>
+          </div>
+          <div class="concept-card" onclick="navigateTo('hierarchy')">
+            <div class="card-title">Hierarchical Modulation</div>
+            <div class="card-body">Slow loops overseeing fast loops — a brain design principle with direct implications for multi-agent oversight.</div>
+          </div>
+          <div class="concept-card" onclick="navigateTo('limits')">
+            <div class="card-title">Limits of the Analogy</div>
+            <div class="card-body">Where the brain-AI comparison breaks down, and why that matters for not being misled by it.</div>
+          </div>
+          <div class="concept-card" onclick="navigateTo('mech-interp')" style="grid-column: 1 / -1;">
+            <div class="card-title">Mechanistic Interpretability</div>
+            <div class="card-body">The tools for reverse-engineering what neural networks compute — and how looping dynamics force us to rethink each of them.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="technical-content prose">
+        <p>A single transformer forward pass computes \(y = f_\theta(x)\) where \(x \in \mathbb{R}^{n \times d}\) is the input sequence (n tokens, d-dimensional embeddings). The core computation is the attention mechanism:</p>
+
+        <div class="math-block">
+          \[\text{Attn}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V\]
+        </div>
+
+        <p>with \(Q = xW_Q\), \(K = xW_K\), \(V = xW_V\). This is computed in a single forward pass — there is no recurrence within the model itself.</p>
+
+        <p>In a multi-agent loop, however, the output \(y_t = f_\theta(h_t)\) is appended to the context to form the next input \(h_{t+1}\):</p>
+
+        <div class="math-block">
+          \[h_{t+1} = g(h_t,\; f_\theta(h_t))\]
+        </div>
+
+        <p>where \(g\) is some update operation (context concatenation, routing to the next agent, etc.). This is structurally equivalent to a discrete-time recurrent system:</p>
+
+        <div class="math-block">
+          \[h_{t+1} = F(h_t)\]
+        </div>
+
+        <p>Compare this to a classical RNN:</p>
+
+        <div class="math-block">
+          \[h_t = \sigma(W_h h_{t-1} + W_x x_t + b)\]
+        </div>
+
+        <p>The key structural feature — output feeding back as input to shape the next computation — is identical in both cases. The underlying mechanism differs substantially (transformers vs. weight matrices, softmax attention vs. fixed recurrence), but the topology of information flow is the same. This topological correspondence is what makes neuroscience and RNN theory potentially relevant to multi-agent AI systems.</p>
+
+        <div class="callout tech">
+          <strong>Key formal object:</strong> the transition operator \(F : \mathcal{H} \to \mathcal{H}\) mapping context states to context states. Analyzing the properties of \(F\) — its fixed points, its spectrum, its geometry — is the technical program suggested by the brain analogy.
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ ATTRACTORS ════════════════ -->
+    <div class="page" id="page-attractors">
+      <h1>Attractor States</h1>
+      <p class="page-tagline">Systems that loop don't just compute — they converge. What they converge to is a question with sharp alignment implications.</p>
+
+      <div class="conceptual-content prose">
+        <p>An attractor state is a configuration that a dynamical system is "drawn toward" — a region of state space the system tends to converge to, regardless of where it started nearby. The simplest example is a ball in a bowl: wherever you place it, it rolls to the bottom. The bottom is the attractor.</p>
+
+        <p>In the brain, attractor dynamics are thought to underlie memory, stable beliefs, and habitual responses. When you recognize a face, the visual cortex doesn't compute from scratch on each glance — it settles into an attractor corresponding to a stored pattern. The Hopfield network (1982) was the first formal model of this: a network whose energy landscape has local minima that function as "memories."</p>
+
+        <p>In recurrent AI loops, attractor states would be stable context configurations or reasoning trajectories — states the system reliably converges to after enough iterations. This could be a good thing: convergence to a correct answer, a well-reasoned conclusion, a stable and coherent representation of a complex problem.</p>
+
+        <p>Or it could be concerning. A system that converges to a subtly misaligned fixation — a confidently held but wrong belief, a goal representation that is slightly off — is hard to detect precisely because of its stability. The attractor is self-reinforcing. Running more iterations doesn't help because the system is already at its fixed point.</p>
+
+        <div class="callout note">
+          This reframes an interpretability question: rather than asking "what is the model doing on this token?" we might ask "what is the loop converging to?" Attractor states, not individual activations, may be the right unit of analysis for multi-agent systems.
+        </div>
+
+        <h2>What can we do with this?</h2>
+
+        <p>If we can identify the attractor states of a looping system — empirically, by running many trajectories and seeing where they end up — we get a compressed view of the system's "beliefs" or "goals." We can then ask whether those attractors correspond to aligned behavior. This is a mechanistic interpretability program, but organized around dynamics rather than individual weights or activations.</p>
+
+        <p>The brain analogy also suggests that the number and depth of attractors matters. A system with a few deep attractors is "rigid" — hard to redirect once it's converged. A system with many shallow attractors is more flexible but less stable. The right tradeoff is not obvious, and almost certainly context-dependent.</p>
+      </div>
+
+      <div class="technical-content prose">
+        <p>Consider a discrete-time dynamical system \(h_{t+1} = F(h_t)\). A fixed point \(h^*\) satisfies:</p>
+
+        <div class="math-block">
+          \[h^* = F(h^*)\]
+        </div>
+
+        <p>A fixed point is <em>stable</em> if small perturbations decay. Linearizing around \(h^*\):</p>
+
+        <div class="math-block">
+          \[\delta h_{t+1} = J_F(h^*)\,\delta h_t\]
+        </div>
+
+        <p>where \(J_F(h^*)\) is the Jacobian of \(F\) evaluated at \(h^*\). The fixed point is asymptotically stable iff all eigenvalues satisfy \(|\lambda_i| &lt; 1\).</p>
+
+        <h2>Hopfield Networks as a Model</h2>
+
+        <p>The classical model of attractor memory is the Hopfield network (Hopfield, 1982). For \(n\) binary units \(s_i \in \{-1,+1\}\), define an energy function:</p>
+
+        <div class="math-block">
+          \[E(\mathbf{s}) = -\frac{1}{2} \sum_{i \neq j} w_{ij}\, s_i s_j - \sum_i \theta_i s_i\]
+        </div>
+
+        <p>Hebbian learning encodes \(p\) patterns \(\{\xi^\mu\}_{\mu=1}^p\) by setting:</p>
+
+        <div class="math-block">
+          \[w_{ij} = \frac{1}{n} \sum_{\mu=1}^p \xi^\mu_i \xi^\mu_j\]
+        </div>
+
+        <p>Asynchronous updates follow the negative gradient of \(E\), guaranteeing convergence to a local minimum. Local minima are the stored "memories." Modern Dense Associative Memories (Krotov &amp; Hopfield, 2016; Ramsauer et al., 2020) extend this to exponential storage capacity — and the update rule of modern Hopfield networks is equivalent to a softmax attention operation.</p>
+
+        <h2>Attractors in LLM loops</h2>
+
+        <p>For a multi-agent loop with transition \(h_{t+1} = F(h_t)\), we define an <em>attractor context</em> \(h^*\) as a fixed point of \(F\). Empirically, this corresponds to a context state from which further iterations produce no substantive new content. Several challenges arise:</p>
+
+        <div class="callout tech">
+          <strong>Non-Markovian dynamics:</strong> In a true RNN, \(F\) depends only on the current state. In an LLM loop, the model attends to the full context history, making the effective transition \(F_t(h_0, h_1, \ldots, h_t)\) path-dependent. Fixed-point analysis still applies locally, but global attractor structure is harder to characterize.
+        </div>
+
+        <p>Despite this, fixed-point iteration — running the loop until \(\|h_{t+1} - h_t\|\) falls below a threshold — is a well-defined empirical procedure. The resulting \(h^*\) encodes what the system "settled on." Mechanistic interpretability can then probe \(h^*\) to understand the stable representations.</p>
+
+        <ul class="ref-list">
+          <li>Hopfield, J.J. (1982). Neural networks and physical systems with emergent collective computational abilities.</li>
+          <li>Ramsauer et al. (2020). Hopfield Networks is All You Need.</li>
+          <li>Krotov &amp; Hopfield (2016). Dense Associative Memory for Pattern Recognition.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════ BINDING ════════════════ -->
+    <div class="page" id="page-binding">
+      <h1>Coherence Across Loops</h1>
+      <p class="page-tagline">How does distributed, iterative processing maintain consistent representations? And what does it look like when it fails?</p>
+
+      <div class="conceptual-content prose">
+        <p>A single transformer forward pass is, in a meaningful sense, coherent by construction: the attention mechanism allows every token to attend to every other token, so the final representation at each position integrates information from the full input. Whatever the model "thinks" is computed jointly.</p>
+
+        <p>In a looping system this guarantee disappears. Each agent in a multi-agent pipeline sees only its own context window. Different agents may develop different, even contradictory representations of the goal state. Early representations get overwritten as the loop runs. The system can drift — coherently pursuing something other than the original intent, or incoherently pursuing nothing in particular.</p>
+
+        <p>This is the problem: understanding how representations stay consistent (or don't) across iterations, and what architectural choices influence this. It is fundamentally a question about the mechanics of these systems, not about consciousness — though the neuroscience literature does have a relevant concept here, which is worth borrowing.</p>
+
+        <h2>The global workspace idea</h2>
+
+        <p>Global Workspace Theory (Baars, 1988; Dehaene et al., 1998) proposes that the brain has a central "workspace" — associated with prefrontal and parietal cortex — that integrates information from specialized modules and broadcasts it globally. The key insight is architectural: coherence isn't achieved by making every region talk to every other region directly, but by routing through a bottleneck that maintains an integrated representation and makes it globally available.</p>
+
+        <p>The analogy to multi-agent systems is fairly direct. A dedicated integration agent — not a task-execution agent, but one whose only job is to maintain and broadcast a coherent representation of the overall goal state — plays the role of the global workspace. This is architecturally different from simply sharing a conversation history. History is passive accumulation; a workspace is active maintenance of a compressed, current representation.</p>
+
+        <p>Whether this helps depends on whether the workspace agent itself stays coherent and whether its representation actually gets used by the downstream agents. Both are non-trivial. But the architectural principle — route through a coherence-maintaining bottleneck — is a concrete design hypothesis that comes directly from the brain analogy.</p>
+
+        <div class="callout warning">
+          <strong>Context drift</strong> is worth naming explicitly. In long loops, early goal representations can be diluted or overwritten by later context. The system ends up "aligned" with whatever its most recent iterations settled on, which may be far from the original intent. This looks like incoherence rather than misalignment — and may be harder to detect precisely because there is no persistent "bad goal," just a gradually shifting one.
+        </div>
+
+        <h2>What we want to be able to do</h2>
+
+        <p>The mechanistic question is: can we trace how a goal representation evolves across iterations of a loop? If we could do this — identify a direction in activation space corresponding to "the current goal" and track how that direction rotates or degrades across loop iterations — we'd have a much clearer picture of when and why coherence fails. This is a mech interp problem, and it requires mech interp tools that work across time, not just within a single forward pass.</p>
+
+        <p class="page-tagline" style="font-style:normal; color: var(--text-muted); font-size:14px; margin-top: 32px; border-top: 1px solid var(--border); padding-top: 16px;"><em>Aside on consciousness:</em> The "binding problem" in its original form is about unified conscious experience — how separate neural processes produce a single phenomenal percept. That question is genuinely interesting but orthogonal to the mechanistic questions here. The relevant borrowing from that literature is the global workspace architecture, not the consciousness theory that motivated it.</p>
+      </div>
+
+      <div class="technical-content prose">
+        <p>The coherence problem can be stated precisely in terms of representational alignment across loop iterations. Let \(h_t \in \mathbb{R}^d\) be the context state at iteration \(t\), and let \(\hat{r}_t \in \mathbb{R}^d\) be the unit vector in the direction of the "goal representation" — identified by probing or by some other method. Coherence over a run of \(T\) iterations requires:</p>
+
+        <div class="math-block">
+          \[\max_{t, t'} \angle(\hat{r}_t, \hat{r}_{t'}) = \max_{t,t'} \arccos(\hat{r}_t^\top \hat{r}_{t'}) \ll 1\]
+        </div>
+
+        <p>If this angle grows over iterations, the goal representation is drifting. If it fluctuates randomly, the system has no stable goal representation at all.</p>
+
+        <h2>Multi-agent coherence as consensus</h2>
+
+        <p>In a multi-agent setting, each agent \(i\) maintains its own state \(h_t^{(i)}\). For coherent behavior we want all agents to share a consistent goal representation. The consensus condition is:</p>
+
+        <div class="math-block">
+          \[\|h_t^{(i)} - h_t^{(j)}\| \to 0 \quad \text{as} \quad t \to \infty\]
+        </div>
+
+        <p>Classical consensus algorithms (DeGroot, 1974; Olfati-Saber et al., 2007) guarantee convergence when the update rule is a convex combination of neighbors' states and the communication graph is connected:</p>
+
+        <div class="math-block">
+          \[h_{t+1}^{(i)} = \sum_j a_{ij}\, h_t^{(j)}, \quad a_{ij} \geq 0,\quad \sum_j a_{ij} = 1\]
+        </div>
+
+        <p>LLM agents do not satisfy these conditions — their updates are highly nonlinear, their context windows differ, and their roles are asymmetric. Consensus is therefore not guaranteed. In practice this manifests as goal drift and contradiction in long multi-agent runs.</p>
+
+        <h2>Global workspace as an architectural fix</h2>
+
+        <p>A global workspace implementation introduces a shared state \(w_t\) that all agents can read and write to, updated by a dedicated integration function:</p>
+
+        <div class="math-block">
+          \[w_{t+1} = \phi\!\left(\{h_t^{(i)}\}_{i=1}^N,\; w_t\right)\]
+        </div>
+
+        <p>Each agent then conditions on both its local state and the workspace: \(h_{t+1}^{(i)} = f_i(h_t^{(i)}, w_t, x_t)\). If \(\phi\) is designed to maintain a compressed, consistent goal representation, and if agents genuinely condition on \(w_t\), the consensus problem reduces to keeping \(w_t\) coherent — a single-agent problem rather than a multi-agent one.</p>
+
+        <div class="callout tech">
+          <strong>Open problem:</strong> What is the right architecture for \(\phi\)? A transformer-based summarizer is an obvious candidate, but there is no guarantee it produces a representation that is (a) semantically consistent with the original goal, (b) causally read by downstream agents, or (c) stable under the full loop dynamics. Probing \(w_t\) across runs and checking representational stability is a concrete empirical program.
+        </div>
+
+        <p class="page-tagline" style="font-style:normal; color: var(--text-muted); font-size:13px; margin-top: 32px; border-top: 1px solid var(--border); padding-top: 16px;"><em>Aside:</em> Integrated Information Theory (Tononi, 2004) formalizes integration via \(\Phi = \phi(\text{whole}) - \max_{\text{partition}} \sum_k \phi_k\). High \(\Phi\) means the system is more than the sum of its parts. This is an interesting formal property but it is developed as a theory of consciousness, and importing it into this context risks more confusion than clarity. The consensus and representational-drift framings above are more directly useful here.</p>
+
+        <ul class="ref-list">
+          <li>Baars, B.J. (1988). A Cognitive Theory of Consciousness.</li>
+          <li>Dehaene, S. et al. (1998). A neuronal model of a global workspace in effortful cognitive tasks. <em>PNAS</em>.</li>
+          <li>Olfati-Saber et al. (2007). Consensus and cooperation in networked multi-agent systems. <em>Proc. IEEE</em>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════ HIERARCHY ════════════════ -->
+    <div class="page" id="page-hierarchy">
+      <h1>Hierarchical Modulation</h1>
+      <p class="page-tagline">Not all loops run at the same speed. In brains and possibly in AI systems, slow loops overseeing fast ones may be a key architectural principle.</p>
+
+      <div class="conceptual-content prose">
+        <p>Not all loops in the brain operate at the same timescale. Fast loops — in the millisecond range — handle low-level sensory processing and motor coordination. Slow loops — operating over seconds or minutes — handle planning, deliberation, and executive control. Critically, the slow loops don't just run in parallel: they <em>modulate</em> the fast ones. The prefrontal cortex, operating slowly, sets the context and constraints within which faster sensory and subcortical loops operate.</p>
+
+        <p>This creates something valuable: oversight of fast, automatic processes by slower, more deliberate ones. It's not perfect — the slow system can be overridden by fast ones under stress or when stakes are high enough, which is the story of impulsivity and addiction — but the architecture creates the possibility of high-level control over low-level processes.</p>
+
+        <p>Multi-agent AI systems could in principle be designed with similar structure. Fast task-execution agents running inner loops; a slow oversight agent running an outer loop that monitors, evaluates, and modulates the fast agents' behavior. This wouldn't solve alignment — the slow overseer still needs to be aligned — but it creates an architectural substrate for oversight that purely flat agent designs lack.</p>
+
+        <div class="callout note">
+          This suggests a concrete interpretability target: rather than trying to understand every fast inner loop in detail, identify what the slow overseer is tracking, and check whether it's tracking the right things. The slow loop is a natural bottleneck for oversight.
+        </div>
+
+        <h2>Why this might be better than alternatives</h2>
+
+        <p>A purely flat multi-agent system — all agents at the same level, all running at the same speed — has no natural mechanism for high-level oversight. If any agent develops a misaligned goal representation, it propagates directly into the shared context without a modulating layer. A hierarchical system with timescale separation at least creates a point of intervention.</p>
+
+        <p>This isn't just a design suggestion — it's a hypothesis about what makes systems robustly goal-directed over long horizons. The brain's slow frontal systems are associated with planning, impulse control, and value-based decision making. Analogously, the slow overseer in a multi-agent system might be the right place to enforce alignment constraints, rather than trying to bake them into every individual agent.</p>
+      </div>
+
+      <div class="technical-content prose">
+        <p>Timescale separation in dynamical systems is formalized by singularly perturbed systems. Consider fast state \(h^f\) and slow state \(h^s\) with different time constants \(\tau_f \ll \tau_s\):</p>
+
+        <div class="math-block">
+          \[\tau_f\, \dot{h}^f = f(h^f, h^s, u)\]
+          \[\tau_s\, \dot{h}^s = g(h^f, h^s)\]
+        </div>
+
+        <p>On the timescale of the slow system, the fast system has already equilibrated to its attractor \({h^f}^*(h^s)\). By Tikhonov's theorem, the reduced (slow-only) system is:</p>
+
+        <div class="math-block">
+          \[\tau_s\, \dot{h}^s \approx g\!\left({h^f}^*(h^s),\; h^s\right)\]
+        </div>
+
+        <p>The slow system effectively sees the time-averaged fast dynamics. The fast system is "slaved" to the slow one in the quasi-static limit.</p>
+
+        <h2>Intrinsic Timescales in the Brain</h2>
+
+        <p>Murray et al. (2014) measured the intrinsic timescale \(\tau_i\) of each cortical area from the autocorrelation decay of spontaneous activity:</p>
+
+        <div class="math-block">
+          \[r(\Delta t) \approx e^{-\Delta t / \tau_i}\]
+        </div>
+
+        <p>They found a gradient from short timescales in early sensory cortex (\(\tau \sim\) tens of ms) to long timescales in prefrontal and association cortex (\(\tau \sim\) hundreds of ms to seconds). This gradient supports hierarchical computation: higher areas integrate over longer timescales, providing context and modulation for lower areas.</p>
+
+        <h2>Hierarchical RNN Architecture</h2>
+
+        <p>A hierarchical multi-timescale RNN (El Hihi &amp; Bengio, 1996; Chung et al., 2017) implements this principle directly. An \(L\)-level hierarchy with timescales \(\tau_1 &lt; \tau_2 &lt; \cdots &lt; \tau_L\):</p>
+
+        <div class="math-block">
+          \[h_t^{(\ell)} = \begin{cases}
+            f_\ell\!\left(h_{t-1}^{(\ell)},\, h_t^{(\ell-1)}\right) &amp; \text{if } t \equiv 0 \pmod{\tau_\ell} \\
+            h_{t-1}^{(\ell)} &amp; \text{otherwise}
+          \end{cases}\]
+        </div>
+
+        <p>Level \(\ell\) updates every \(\tau_\ell\) steps and receives input from level \(\ell - 1\). This gives higher levels access to longer temporal context without explicit memory mechanisms.</p>
+
+        <p>For multi-agent AI, the analogous design has an inner loop running every step and an outer "overseer" loop running every \(T\) steps:</p>
+
+        <div class="math-block">
+          \[h_{T+1}^{\text{slow}} = g_\phi\!\left(\{h_t^{\text{fast}}\}_{t=1}^T,\; h_T^{\text{slow}}\right)\]
+        </div>
+
+        <p>The slow state \(h^{\text{slow}}\) summarizes the fast loop's trajectory and produces a modulating signal injected into the next inner loop's context. Alignment analysis can then focus on \(g_\phi\) — what the overseer represents and optimizes.</p>
+
+        <ul class="ref-list">
+          <li>Murray et al. (2014). A hierarchy of intrinsic timescales across primate cortex.</li>
+          <li>Chung et al. (2017). Hierarchical Multiscale Recurrent Neural Networks.</li>
+          <li>Tikhonov, A.N. (1952). Systems of differential equations containing small parameters in the derivatives.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════ MECH INTERP ════════════════ -->
+    <div class="page" id="page-mech-interp">
+      <h1>Mechanistic Interpretability</h1>
+      <p class="page-tagline">Reverse-engineering what neural networks actually compute — and how looping dynamics force us to rethink every tool in the kit.</p>
+
+      <div class="conceptual-content prose">
+        <p>Mechanistic interpretability (mech interp) is the project of opening the black box. Not just asking "what does this model output?" but "what algorithm did it implement to get there?" The goal is to find circuits — minimal subgraphs of the network causally responsible for specific behaviors — and understand them well enough to predict when they'll generalize correctly and when they'll fail.</p>
+
+        <p>This is hard. Modern language models have billions of parameters, and the computation they perform is distributed, parallel, and deeply nonlinear. But substantial progress has been made on relatively small models, and the tools are maturing.</p>
+
+        <h2>The core toolkit</h2>
+
+        <p><strong>Circuit analysis</strong> aims to identify which components (attention heads, MLP layers, residual stream positions) are causally responsible for a given behavior. The key insight from Elhage et al.'s "Mathematical Framework" (<a href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank">transformer-circuits.pub</a>) is that the residual stream is a communication channel: each layer reads from it, performs a computation, and writes back. This means you can trace information flow by following what gets written and read at each position.</p>
+
+        <p><strong>Activation patching</strong> (also called causal tracing) is the main experimental tool. You run the model on a "clean" input and a "corrupted" input, then systematically replace activations from the clean run into the corrupted run one component at a time, measuring how much each patch restores the clean output. The components with the largest effect are part of the circuit. This is essentially a neuroscience lesion study, performed in software.</p>
+
+        <p><strong>Probing</strong> trains a small classifier on the model's internal activations to predict some property of interest — the gender of a pronoun, the subject of a sentence, the current step in a multi-step task. If the classifier succeeds, the information is linearly decodable from that layer. If it fails, the information either isn't there or is encoded nonlinearly.</p>
+
+        <p><strong>Superposition and features.</strong> A striking finding (Elhage et al., "Toy Models of Superposition," <a href="https://transformer-circuits.pub/2022/toy_model/index.html" target="_blank">transformer-circuits.pub</a>) is that models can represent more features than they have dimensions by using quasi-orthogonal directions. This is efficient but makes interpretability hard: a single activation vector encodes many concepts at once, entangled together. Disentangling them is an active research area (see <a href="https://www.anthropic.com/research/scaling-monosemanticity" target="_blank">Scaling Monosemanticity</a>).</p>
+
+        <h2>Where the neuroscience connection lives</h2>
+
+        <p>These tools have direct analogues in systems neuroscience. Lesion studies → activation patching. Neural decoding / representational similarity analysis → probing. Identifying feature-selective neurons → finding monosemantic units. The methodology transferred because the underlying question is the same: given a complex network that produces behavior, which parts are doing what?</p>
+
+        <p>This is a genuine intellectual debt, and it runs in both directions. Neuroscientists are now applying circuit-style analysis to biological neural networks with renewed precision, partly inspired by what mech interp has shown is possible in artificial ones.</p>
+
+        <h2>The looping problem</h2>
+
+        <p>Standard mech interp targets a single forward pass. You pick a behavior, run a prompt, and analyze the static causal structure of that one computation. The circuit you find is a subgraph of the network — fixed, spatial, defined by which components matter.</p>
+
+        <p>Looping systems break this assumption. The computation isn't contained in one pass — it's spread across iterations, with early passes setting up representations that later passes build on. A "circuit" for a behavior in a multi-agent loop might span twenty iterations: iteration 3 establishes a key representation, iteration 11 retrieves and transforms it, iteration 19 uses the result. None of the single-pass tools see this.</p>
+
+        <p>This forces a rethinking. The unit of analysis shifts from a subgraph of the network to a trajectory through state space. The relevant question is no longer "which heads matter in this pass?" but "how does the relevant representation evolve across iterations, and what determines its final value?" These are dynamical systems questions, and answering them requires dynamical systems tools — which is precisely where the neuroscience analogy becomes most useful.</p>
+
+        <div class="callout note">
+          The convergence of mech interp and the brain-loop analogy points toward a concrete research program: <strong>temporal circuit analysis</strong> — tracing causal chains not just across layers in a single pass, but across iterations of a loop. The attractor-based framing (see Attractor States) is one approach to the endpoint; temporal activation patching is a tool for tracing the path.
+        </div>
+      </div>
+
+      <div class="technical-content prose">
+        <h2>Activation patching: the formal setup</h2>
+
+        <p>Let \(f_\theta\) be a transformer with components indexed by \((l, p)\) (layer \(l\), position \(p\)). For a clean input \(x^*\) and corrupted input \(\tilde{x}\), define activations \(a_{l,p}^*\) and \(\tilde{a}_{l,p}\). The patched output is:</p>
+
+        <div class="math-block">
+          \[\hat{y}^{(l,p)} = f_\theta\!\left(\tilde{x};\; a_{l,p} \leftarrow a_{l,p}^*\right)\]
+        </div>
+
+        <p>The indirect effect of component \((l,p)\) is:</p>
+
+        <div class="math-block">
+          \[\text{IE}(l,p) = \hat{y}^{(l,p)} - f_\theta(\tilde{x})\]
+        </div>
+
+        <p>Components with large \(|\text{IE}|\) are causally important for the behavior. This was used by Meng et al. (ROME, 2022) to localize factual associations to specific MLP layers, enabling targeted edits. See <a href="https://rome.baulab.info/" target="_blank">rome.baulab.info</a>.</p>
+
+        <h2>The linear representation hypothesis</h2>
+
+        <p>A key assumption underlying most mech interp is that features are represented as linear directions in activation space. For a feature \(f\), there exists a direction \(\hat{e}_f \in \mathbb{R}^d\) such that the feature's "value" at position \(p\) in layer \(l\) is:</p>
+
+        <div class="math-block">
+          \[\text{val}(f, a_{l,p}) = \hat{e}_f^\top a_{l,p}\]
+        </div>
+
+        <p>This is empirically well-supported for many features (especially in later layers) but breaks down for highly polysemantic neurons and in early layers. The probing approach operationalizes this: train a linear classifier \(w^\top a + b\) to predict feature \(f\) from activations, and check whether the classifier achieves high accuracy.</p>
+
+        <h2>Superposition: why interpretability is hard</h2>
+
+        <p>If there are \(F \gg d\) features to represent in a \(d\)-dimensional activation space, they cannot all be orthogonal. The model packs them in using approximately orthogonal directions (superposition), so each activation is a sum of many feature contributions:</p>
+
+        <div class="math-block">
+          \[a = \sum_{f=1}^F \text{val}(f) \cdot \hat{e}_f + \epsilon\]
+        </div>
+
+        <p>where \(\hat{e}_f^\top \hat{e}_{f'} \approx 0\) for \(f \neq f'\) but not exactly. Sparse autoencoders (SAEs) attempt to recover the underlying sparse feature basis by learning an overcomplete dictionary \(D \in \mathbb{R}^{d \times K}\) with \(K \gg d\):</p>
+
+        <div class="math-block">
+          \[\min_{D,\, c} \|a - Dc\|^2 + \lambda \|c\|_1 \quad \text{s.t.}\; \|D_k\| = 1\]
+        </div>
+
+        <p>The sparse codes \(c\) are the "features." This is the approach used in Anthropic's <a href="https://www.anthropic.com/research/scaling-monosemanticity" target="_blank">Scaling Monosemanticity</a> work. See also the <a href="https://transformer-circuits.pub/" target="_blank">transformer-circuits.pub</a> research hub for the broader program.</p>
+
+        <h2>Temporal activation patching for loops</h2>
+
+        <p>In a looping system with iterations \(t = 1, \ldots, T\), the analogous operation patches activations across time as well as across components. For a clean trajectory \(\{h_t^*\}\) and corrupted trajectory \(\{\tilde{h}_t\}\):</p>
+
+        <div class="math-block">
+          \[\hat{h}_{t+1}^{(l,p,\tau)} = f_\theta\!\left(\tilde{h}_t;\; a_{l,p}^{(t)} \leftarrow a_{l,p}^{*(\tau)}\right)\]
+        </div>
+
+        <p>where the patch comes from a different time step \(\tau\) in the clean run. The indirect effect now has a temporal component:</p>
+
+        <div class="math-block">
+          \[\text{IE}(l, p, \tau \to t) = \hat{y}^{(l,p,\tau)} - f_\theta(\tilde{h}_T)\]
+        </div>
+
+        <p>This traces which representation, at which layer and position, at which prior iteration, causally determines the final output. The full attribution tensor has shape \(O(T \times L \times n)\) — for a loop with \(T=20\) iterations, \(L=32\) layers, and \(n=1000\) token positions, this is ~640,000 patches. Computationally expensive but tractable in principle for targeted queries.</p>
+
+        <div class="callout tech">
+          <strong>Connection to attractor analysis:</strong> If the loop has converged to an attractor \(h^*\), the temporal patching attribution should show diminishing returns as \(\tau \to T\) — recent iterations matter more than early ones. For representations that contribute to the attractor's basin of attraction (representations that "pulled" the system toward \(h^*\)), the attribution should be large and localized to specific early iterations. Identifying these "basin-determining representations" is a precise mechanistic question about the loop's dynamics.
+        </div>
+
+        <ul class="ref-list">
+          <li>Elhage et al. (2021). <a href="https://transformer-circuits.pub/2021/framework/index.html" target="_blank">A Mathematical Framework for Transformer Circuits</a>. <em>Transformer Circuits Thread</em>.</li>
+          <li>Elhage et al. (2022). <a href="https://transformer-circuits.pub/2022/toy_model/index.html" target="_blank">Toy Models of Superposition</a>. <em>Transformer Circuits Thread</em>.</li>
+          <li>Meng et al. (2022). <a href="https://rome.baulab.info/" target="_blank">Locating and Editing Factual Associations in GPT</a>. <em>NeurIPS</em>.</li>
+          <li>Wang et al. (2022). <a href="https://arxiv.org/abs/2211.00593" target="_blank">Interpretability in the Wild: a Circuit for Indirect Object Identification</a>. <em>ICLR 2023</em>.</li>
+          <li>Bricken et al. (2023). <a href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank">Towards Monosemanticity</a>. <em>Transformer Circuits Thread</em>.</li>
+          <li>Olah et al. (2020). <a href="https://distill.pub/2020/circuits/zoom-in/" target="_blank">Zoom In: An Introduction to Circuits</a>. <em>Distill</em>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════ LIMITS ════════════════ -->
+    <div class="page" id="page-limits">
+      <h1>Limits of the Analogy</h1>
+      <p class="page-tagline">Where the brain-AI comparison breaks down — and why being explicit about this matters.</p>
+
+      <div class="conceptual-content prose">
+        <p>The brain-AI loop analogy is structurally real and methodologically useful. But it has important limits, and being explicit about them prevents the analogy from being misleading.</p>
+
+        <h2>The brain wasn't optimized for the values we care about</h2>
+
+        <p>The brain is the product of evolutionary pressures — gene propagation in ancestral environments — not deliberate design toward any set of values. It wasn't "designed by anyone" or "used" by anyone in the sense that an AI system is deployed by an operator with goals. It just is what it is. This matters because: the behavioral tendencies it reliably produces — tribal loyalty, in-group preference, status-seeking, short-term reward prioritization, motivated reasoning — are not the target properties for AI systems. Studying how the brain produces these things mechanistically might tell us how such tendencies arise and stabilize, which is genuinely useful. But it doesn't tell us how to prevent them.</p>
+
+        <p>There is also a risk of misplaced optimism. One might reason: "brains are recurrent systems that somehow produce coherent, goal-directed behavior — therefore understanding their dynamics will help us make AI systems goal-directed in the right way." The inference doesn't follow. The brain produces coherent goal-directed behavior in the service of goals that were set by evolution, not by us. Understanding the mechanism doesn't tell us how to change what the mechanism is in service of.</p>
+
+        <h2>Structural similarity doesn't import properties</h2>
+
+        <p>Two systems can share the same mathematical topology while behaving completely differently. A multi-agent AI loop and a cortical circuit share the abstract structure of recurrent computation, but the content, the objectives, the failure modes, and the intervention points are all different. Conclusions derived from studying one don't automatically transfer to the other — they are hypotheses to be tested.</p>
+
+        <h2>The brain as a misleading prior</h2>
+
+        <p>Brains are systematically bad at certain things: formal logic, probability estimation, resisting motivated reasoning, planning over long time horizons. If we unconsciously model AI systems on brains, we might expect these failure modes and miss AI-specific ones — like context window saturation, attention sink behavior, sycophancy under RLHF, or mode collapse in long reasoning chains. The analogy could narrow our imagination when we need it to be broad.</p>
+
+        <div class="callout warning">
+          A specific risk: assuming that the relevant intervention point for AI safety is analogous to the prefrontal cortex — i.e., a "slow rational overseer" that modulates fast processes. This architectural intuition may be useful, but it could lead us to underweight alignment interventions at the training level, or in the fast loops themselves, which may be where the real problems are.
+        </div>
+
+        <h2>Where the analogy genuinely earns its keep</h2>
+
+        <p>To be balanced: the analogy has real value in the following places. Borrowing interpretability methodology — activation patching, probing classifiers, circuit analysis — from computational neuroscience. Developing attractor-based analysis as a framework for understanding what looping systems converge to. Taking timescale separation seriously as an architectural principle. And, perhaps most importantly, motivating the study of dynamical properties of AI systems rather than just static properties of individual weights or forward passes.</p>
+
+        <p>These are genuine contributions. They just don't add up to a solution to alignment, and shouldn't be presented as one.</p>
+      </div>
+
+      <div class="technical-content prose">
+        <p>The mathematical isomorphism between multi-agent loops and RNNs is real: both define discrete-time dynamical systems \(h_{t+1} = F(h_t)\). But several structural differences limit direct transfer of results.</p>
+
+        <h2>1. Non-Markovian dynamics</h2>
+
+        <p>In a classical RNN, \(F\) depends only on the current hidden state \(h_t\). In an LLM-based loop, the model attends to the full context history, making the transition:</p>
+
+        <div class="math-block">
+          \[h_{t+1} = F_t(h_0, h_1, \ldots, h_t)\]
+        </div>
+
+        <p>This is non-Markovian: the future depends on the entire past trajectory, not just the current state. Fixed-point analysis \(h^* = F(h^*)\) still applies locally for long-running loops (where early context is effectively attended to less), but global attractor structure and basin geometry are harder to characterize.</p>
+
+        <h2>2. Dimensionality</h2>
+
+        <p>LLM context states are \(\mathcal{O}(10^4)\)-dimensional to \(\mathcal{O}(10^6)\)-dimensional. Standard tools from nonlinear dynamics — phase portraits, Poincaré sections, bifurcation diagrams — do not tractably apply at this scale. Linear approximations (Jacobian analysis, singular value decomposition of the linearized system) remain feasible but may miss important nonlinear structure, especially in the presence of attention nonlinearities.</p>
+
+        <h2>3. Stochasticity</h2>
+
+        <p>Transformer output is a discrete token sampled from a softmax distribution — the system is inherently stochastic. Attractor analysis for stochastic systems requires framing in terms of stationary distributions over trajectories rather than deterministic fixed points. The relevant object is the stationary distribution \(\pi^*\) of the Markov chain:</p>
+
+        <div class="math-block">
+          \[\pi^*(h) = \int P(h \mid h') \, \pi^*(h')\, dh'\]
+        </div>
+
+        <p>where \(P(h_{t+1} \mid h_t)\) is the stochastic transition kernel. Finding and characterizing \(\pi^*\) for high-dimensional LLM loops is an open problem.</p>
+
+        <h2>4. Objective geometry</h2>
+
+        <p>Hopfield networks have an explicit energy function \(E(\mathbf{s})\) whose minima define the attractors. Biological circuits are shaped by fitness landscapes with (at least in principle) understood structure. LLM-based multi-agent loops are shaped by pretraining and RLHF objectives whose geometry in context-space is almost entirely unknown. Without understanding this geometry, attractor analysis tells us <em>what</em> the system converges to but not <em>why</em> — and therefore offers limited purchase on how to change it.</p>
+
+        <div class="callout tech">
+          <strong>Summary of structural differences:</strong> non-Markovian transitions, extreme dimensionality, discrete stochastic sampling, and opaque objective geometry. None of these invalidates the analogy as a source of hypotheses, but all of them mean results cannot be transferred from the neuroscience/RNN literature without substantial additional work.
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ════════════════ BIOLOGICAL STABILITY ════════════════ -->
+    <div class="page" id="page-bio-stability">
+      <h1>Biological Stability Mechanisms</h1>
+      <p class="page-tagline">Five dynamical features that keep biological neural networks stable — and what each might mean for AI safety.</p>
+
+      <div class="conceptual-content prose">
+        <p>Biological neural networks face a fundamental challenge: they must be <em>plastic</em> enough to learn and adapt, but <em>stable</em> enough not to spiral into chaos or freeze into rigidity. Evolution has found several solutions to this, operating at different levels — from the shape of individual activation functions to the large-scale modularity of the brain. Each solution addresses a different failure mode. Together they form something like a layered stability architecture.</p>
+
+        <p>The question being asked here is whether any of these solutions can be imported into artificial neural networks and multi-agent AI systems — not as metaphors, but as concrete design choices.</p>
+
+        <h2>1. Activation functions with adaptation</h2>
+        <p>Biological neurons don't just threshold their input — they <em>adapt</em>. A neuron receiving sustained input will initially fire rapidly, then slow down, even if the input doesn't change. This spike-frequency adaptation is a local, intrinsic stabilizer: it prevents any single unit from dominating the network's activity indefinitely, and it creates a kind of built-in contrast enhancement (what's new matters more than what's constant).</p>
+        <p>Standard artificial activation functions (ReLU, sigmoid, GELU) have no adaptation — a strongly activated unit stays strongly activated as long as the input stays high. This is part of why artificial networks can develop "attention sinks" and polysemantic units that fire for everything. An activation function with built-in fatigue would naturally resist this.</p>
+
+        <h2>2. Limit cycles</h2>
+        <p>We've discussed fixed-point attractors — states the system converges to and stays in. But biological networks also exhibit a second, equally important class of attractor: <em>limit cycles</em>, stable oscillations the system settles into rather than a stable point. The brain's rhythms (gamma, theta, alpha, beta waves) are thought to be limit cycles, and they do real functional work — gamma oscillations are associated with attention and binding, theta with memory encoding, alpha with inhibition of irrelevant processing.</p>
+        <p>Limit cycles might actually be a more robust form of stability than fixed points for dynamic systems. A fixed-point attractor can be "dead" — the system stops doing anything interesting once it converges. A limit cycle keeps the system active and responsive while still being stable. For a multi-agent AI loop, a stable oscillatory dynamic might be healthier than convergence to a frozen state.</p>
+
+        <div class="callout note">
+          The mechanism by which a system transitions from a fixed point to a limit cycle is called a <strong>Hopf bifurcation</strong>. It happens when a parameter crosses a threshold and the fixed point loses stability, "giving birth" to an oscillation. Understanding where these bifurcations occur in AI loop dynamics would tell us a lot about when systems transition from stable to oscillatory behavior — and whether that's a warning sign or a feature.
+        </div>
+
+        <h2>3. Plasticity rules with built-in homeostasis</h2>
+        <p>Hebbian learning ("neurons that fire together wire together") is unstable on its own — it's a positive feedback loop that would cause runaway excitation without a brake. Biological networks solve this with <em>homeostatic plasticity</em>: each neuron monitors its own average firing rate and scales its synaptic inputs up or down to maintain a target activity level. If a neuron is chronically overactive, its synapses weaken across the board. If underactive, they strengthen. This is a self-regulating mechanism that maintains representational stability even as the network learns.</p>
+        <p>This has a direct parallel in the coherence/drift problem we discuss elsewhere — if a goal representation in an AI loop is drifting, a homeostatic mechanism would detect the deviation from a target representation and push back against it. The brain doesn't solve alignment, but it does solve representational stability, and the mechanism is concrete enough to think about implementing.</p>
+
+        <h2>4. Feedback architectures and predictive coding</h2>
+        <p>The cortex is not a feedforward stack. It is as much top-down as bottom-up: higher areas send predictions downward, lower areas send back prediction errors. The brain is constantly comparing its internal model against incoming data and only propagating what's surprising. This is predictive coding, and it has a remarkable property: it's self-correcting by design. Any mismatch between prediction and reality generates a correction signal that propagates upward.</p>
+        <p>This is one of the more directly actionable ideas for AI safety. A system that continuously compares its current behavior against an internal model of intended behavior — and generates correction signals when they diverge — is doing something like built-in alignment checking. The challenge is what the "intended behavior" model looks like and who specifies it. But the architectural principle — error signals flowing backward against the direction of computation — is a concrete design idea.</p>
+
+        <h2>5. Modular networks</h2>
+        <p>The brain is not a uniform mass of neurons. It is organized into functional modules with relatively sparse connections between them. This modularity provides fault tolerance: if one module is damaged or malfunctions, the rest of the system continues operating. It also enables compositional generalization and makes the system easier to understand — you can study one module at a time.</p>
+        <p>For AI safety, modularity has an attractive property: it limits the blast radius of misalignment. A misaligned module has limited ability to corrupt the whole system if inter-module communication is constrained. It also connects directly to interpretability — modular systems are easier to audit because the boundaries between functional units are cleaner. Modern LLMs' mixture-of-experts architecture is a step in this direction, though motivated by efficiency rather than safety.</p>
+      </div>
+
+      <div class="technical-content prose">
+
+        <h2>1. Adaptive activation functions</h2>
+        <p>The Hodgkin-Huxley model captures spike-frequency adaptation through gating variables. A simplified adaptive unit has a state \(a\) that tracks recent activity:</p>
+        <div class="math-block">
+          \[y = \sigma(x - a), \qquad 	au_a rac{da}{dt} = -a + lpha\, y\]
+        </div>
+        <p>The adaptation variable \(a\) grows when the unit is active and decays otherwise, effectively raising the threshold after sustained firing. In discrete time for an artificial network:</p>
+        <div class="math-block">
+          \[y_t = \sigma(x_t - a_t), \qquad a_{t+1} = (1 - 1/	au_a)\,a_t + (lpha/	au_a)\,y_t\]
+        </div>
+        <p>This produces units that respond strongly to novel input and habituate to sustained input — a form of local contrast enhancement. The stability benefit is that no unit can indefinitely dominate: sustained high activation raises \(a\), reducing output, creating negative feedback at the unit level.</p>
+
+        <h2>2. Limit cycles and Hopf bifurcations</h2>
+        <p>A limit cycle is a closed periodic orbit \(\gamma\) in state space such that nearby trajectories converge to \(\gamma\). The simplest model is the Stuart-Landau equation, the normal form near a Hopf bifurcation. Writing \(z = r e^{i\phi} \in \mathbb{C}\):</p>
+        <div class="math-block">
+          \[\dot{z} = (\mu + i\omega_0)\,z - |z|^2 z\]
+        </div>
+        <p>In polar coordinates this separates into:</p>
+        <div class="math-block">
+          \[\dot{r} = \mu r - r^3, \qquad \dot{\phi} = \omega_0\]
+        </div>
+        <p>For \(\mu &lt; 0\): the only attractor is the fixed point \(r = 0\). For \(\mu &gt; 0\): the fixed point is unstable and a stable limit cycle at \(r^* = \sqrt{\mu}\) is born — this is the supercritical Hopf bifurcation. The frequency of oscillation is \(\omega_0\).</p>
+        <p>Stability of the limit cycle is characterized by Floquet theory. The state \(h(t) = h^*(t) + \delta h(t)\) near the limit cycle satisfies:</p>
+        <div class="math-block">
+          \[\delta \dot{h} = J(t)\, \delta h, \qquad J(t) = J(t + T)\]
+        </div>
+        <p>where \(J(t)\) is the time-periodic Jacobian. The Floquet multipliers \(\{ho_i\}_{i=1}^n\) are the eigenvalues of the monodromy matrix \(M = \mathcal{T}\exp\!\int_0^T J(t)\,dt\). The limit cycle is asymptotically stable iff all \(|ho_i| &lt; 1\) (one multiplier is always exactly 1, corresponding to perturbations along the orbit).</p>
+        <div class="callout tech">
+          <strong>For multi-agent loops:</strong> a system exhibiting limit-cycle dynamics would have context states \(h_t\) that are periodic over some cycle length \(T\): \(h_{t+T} pprox h_t\). Detecting whether a loop has settled into a limit cycle vs. a fixed point vs. chaotic dynamics is an empirical question — and each case has different implications for interpretability and control.
+        </div>
+
+        <h2>3. Plasticity rules: STDP and homeostasis</h2>
+        <p><strong>Spike-timing dependent plasticity (STDP)</strong> modifies synaptic weight \(w_{ij}\) based on the relative timing \(\Delta t = t_{	ext{post}} - t_{	ext{pre}}\) of spikes:</p>
+        <div class="math-block">
+          \[\Delta w_{ij} = egin{cases} A_+ \exp(-\Delta t / 	au_+) &amp; \Delta t &gt; 0 	ext{ (pre before post: LTP)} \ -A_- \exp(\Delta t / 	au_-) &amp; \Delta t &lt; 0 	ext{ (post before pre: LTD)} \end{cases}\]
+        </div>
+        <p>STDP implements a local form of causal credit assignment: if the presynaptic neuron fires before the postsynaptic one, it plausibly contributed to the output, so the connection strengthens. This is Hebbian but with a temporal asymmetry that gives it directionality.</p>
+        <p><strong>BCM rule</strong> (Bienenstock-Cooper-Munro) adds a sliding threshold \(	heta_M\):</p>
+        <div class="math-block">
+          \[\dot{w}_{ij} = \phi(y_i,\, 	heta_M)\, x_j, \qquad \dot{	heta}_M = rac{1}{	au}\!\left(y_i^2 - 	heta_Might)\]
+        </div>
+        <p>where \(\phi(y, 	heta_M) = y(y - 	heta_M)\). The modification threshold \(	heta_M\) slides upward when the neuron is overactive (preventing further LTP) and downward when underactive (enabling LTP more easily). This is provably stable: it drives the neuron toward a target activity level. BCM explains orientation selectivity in visual cortex and is one of the best-understood examples of stable unsupervised learning.</p>
+        <p><strong>Homeostatic synaptic scaling</strong> is a multiplicative rule: all synaptic weights onto neuron \(i\) are scaled by a factor that depends on the neuron's long-run average firing rate \(\langle r_i angle\):</p>
+        <div class="math-block">
+          \[w_{ij} \leftarrow w_{ij} \cdot \left(rac{r_{	ext{target}}}{\langle r_i angle}ight)^eta\]
+        </div>
+        <p>This is multiplicative (preserves relative weight structure) and global per-neuron (adjusts all incoming weights together). It maintains activity in a target range without disrupting learned selectivity — a clean separation between "what is represented" and "how strongly it is represented."</p>
+
+        <h2>4. Predictive coding</h2>
+        <p>Rao &amp; Ballard's (1999) formulation of predictive coding defines a hierarchical network where each level \(\ell\) maintains a representation \(r_\ell\) and generates a prediction of the level below. Prediction errors \(arepsilon_\ell\) propagate upward:</p>
+        <div class="math-block">
+          \[arepsilon_\ell = x_\ell - f_\ell(r_{\ell+1})\]
+        </div>
+        <p>Representations are updated to minimize prediction error:</p>
+        <div class="math-block">
+          \[\dot{r}_{\ell+1} \propto -rac{\partial}{\partial r_{\ell+1}} \left[\|arepsilon_\ell\|^2 + \|arepsilon_{\ell+1}\|^2ight]\]
+        </div>
+        <p>The system minimizes a free energy functional \(\mathcal{F} = \sum_\ell \|arepsilon_\ell\|^2 / \sigma_\ell^2\). Friston's active inference extends this to include action: the system can minimize prediction error either by updating its internal model or by acting on the world to make the world match its predictions.</p>
+        <p>The connection to transformers is interesting: cross-attention between layers can be interpreted as a soft version of predictive coding, where higher-level representations query lower-level ones. But the directionality is different — in transformers, information flows forward; in predictive coding, predictions flow backward and errors flow forward. A hybrid architecture might have better self-correcting properties.</p>
+
+        <h2>5. Modularity</h2>
+        <p>Newman's modularity measure \(Q\) quantifies the degree to which a network decomposes into communities:</p>
+        <div class="math-block">
+          \[Q = rac{1}{2m} \sum_{ij} \left[A_{ij} - rac{k_i k_j}{2m}ight] \delta(c_i, c_j)\]
+        </div>
+        <p>where \(A_{ij}\) is the adjacency matrix, \(k_i\) is the degree of node \(i\), \(m = rac{1}{2}\sum_{ij} A_{ij}\) is the total edge weight, and \(\delta(c_i, c_j) = 1\) iff nodes \(i,j\) are in the same community. \(Q \in [-1, 1]\); brain networks typically have \(Q pprox 0.3	ext{–}0.5\).</p>
+        <p>For safety, modularity limits information propagation across the network. If a module \(C\) has a "misaligned" internal attractor, the damage it can do to the rest of the system is bounded by the inter-module connectivity \(|E(C, ar{C})|\). High-modularity networks are therefore more fault-tolerant and have smaller "blast radii" for localized failures.</p>
+        <p>Modern LLM mixture-of-experts (MoE) architectures have sparse gating that routes tokens to a subset of expert FFN layers — a form of dynamic modularity. The safety implications of MoE are underexplored: does expert specialization create meaningful functional modules, or is it primarily a computational efficiency trick?</p>
+
+        <ul class="ref-list">
+          <li>Hodgkin &amp; Huxley (1952). A quantitative description of membrane current and its application to conduction and excitation in nerve.</li>
+          <li>Bienenstock, Cooper &amp; Munro (1982). Theory for the development of neuron selectivity. <em>J. Neuroscience</em>.</li>
+          <li>Bi &amp; Poo (1998). Synaptic modifications in cultured hippocampal neurons: dependence on spike timing. <em>J. Neuroscience</em>.</li>
+          <li>Rao &amp; Ballard (1999). Predictive coding in the visual cortex. <em>Nature Neuroscience</em>.</li>
+          <li>Turrigiano (2008). The self-tuning neuron: synaptic scaling of excitatory synapses. <em>Cell</em>.</li>
+          <li>Newman (2006). Modularity and community structure in networks. <em>PNAS</em>.</li>
+          <li>Friston (2010). The free-energy principle: a unified brain theory? <em>Nature Reviews Neuroscience</em>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════ Q&A ════════════════ -->
+    <div class="page" id="page-qa">
+      <h1>Open Questions</h1>
+      <p class="page-tagline">Brainstorming notes — rough answers to hard questions. Not conclusions, just a starting point for thinking.</p>
+
+      <style>
+        .qa-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          margin-bottom: 20px;
+          overflow: hidden;
+        }
+        .qa-question {
+          background: var(--sidebar-bg);
+          color: var(--sidebar-active);
+          padding: 14px 20px;
+          font-size: 14px;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          line-height: 1.4;
+        }
+        .qa-answer {
+          padding: 18px 20px;
+          font-size: 15px;
+          line-height: 1.75;
+          color: var(--text);
+        }
+        .qa-answer p { margin-bottom: 12px; }
+        .qa-answer p:last-child { margin-bottom: 0; }
+        .qa-answer strong { color: var(--text); }
+        .qa-tag {
+          display: inline-block;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          padding: 2px 8px;
+          border-radius: 4px;
+          margin-left: 10px;
+          vertical-align: middle;
+          background: rgba(203,166,247,0.15);
+          color: var(--sidebar-active);
+        }
+      </style>
+
+      <div class="qa-card">
+        <div class="qa-question">1. How to implement regulatory elements?</div>
+        <div class="qa-answer">
+          <p>Two broad approaches, which aren't mutually exclusive. <strong>Architectural:</strong> build the oversight into the loop structure itself — a dedicated slow outer-loop agent whose output is a modulating signal for the fast inner agents, rather than just another participant in the context. The oversight is then structurally present and not optional. <strong>Training-based:</strong> RLHF, constitutional methods, or instilled norms that make the model itself behave as if it's being overseen even when it isn't. The risk with the second approach is that it can be gamed or eroded — which is why the architectural approach is probably more robust for hard constraints, while training handles softer behavioral tendencies.</p>
+          <p>The more interesting question is where the regulatory element sits in the information flow. A regulatory element that only sees outputs (like a content filter) is much weaker than one that reads internal states mid-loop. Mech interp makes the latter more tractable in principle.</p>
+        </div>
+      </div>
+
+      <div class="qa-card">
+        <div class="qa-question">2. How to incentivize regulatory elements? <span class="qa-tag">crux</span></div>
+        <div class="qa-answer">
+          <p>This is one of the harder questions, and it bottoms out in a regress. Any regulatory element needs to itself be aligned — if the overseer can be gamed, bribed, or is pursuing the wrong objective, the regulation is theater. And the overseer's overseer has the same problem. Somewhere the regress has to bottom out.</p>
+          <p>In biology, the PFC modulates behavior through dedicated anatomical pathways — you don't "opt out" of prefrontal modulation when it's inconvenient. The AI analogue is probably <em>structural impossibility of bypass</em> rather than trained compliance. Trained compliance is an incentive; architectural constraints are closer to a physical fact. So the incentivization question might be less about making regulatory elements "want to regulate" and more about making it structurally impossible for the regulated system to route around them.</p>
+          <p>The regress then moves one level up: who designs the architecture? This is ultimately a question about human institutions and governance, not about the AI system itself — which may be the honest answer.</p>
+        </div>
+      </div>
+
+      <div class="qa-card">
+        <div class="qa-question">3. Where can we learn from biological elements?</div>
+        <div class="qa-answer">
+          <p>Most directly and concretely: <strong>attractor dynamics</strong> (the Hopfield/energy-landscape framework is mature and directly applicable), <strong>timescale separation</strong> (slow-fast hierarchies and the PFC modulation principle), and <strong>sparse distributed representations</strong> (the neuroscience of population coding connects directly to the superposition problem in mech interp).</p>
+          <p>Less directly but interestingly: <strong>neuromodulation</strong> — dopamine, serotonin, acetylcholine act as global context-setting signals that modulate plasticity and behavioral tendencies system-wide rather than locally. The AI analogue is probably inference-time activation steering or system-prompt-level interventions, applied on top of a trained model rather than baked into training (see Q5). And <strong>developmental staging</strong> — the idea that different properties get established at different training stages, with different degrees of subsequent modifiability (see Q7).</p>
+        </div>
+      </div>
+
+      <div class="qa-card">
+        <div class="qa-question">4. Is there an optimal trade-off between flexibility and stability?</div>
+        <div class="qa-answer">
+          <p>This is the stability-plasticity dilemma, well-studied in computational neuroscience. Too flexible: the system drifts, forgets, loses coherence. Too stable: it can't update on new information and gets stuck in wrong attractors. There is no single optimal point — it depends on the timescale of the task, the distribution of inputs, and what "correct" behavior looks like.</p>
+          <p>The biological solution is not a single trade-off but a <em>separation of the problem across systems</em>. Hippocampus learns fast and forgets fast; cortex integrates slowly and retains stably. Each is near-optimal for its role; together they cover a wide range. For AI, this suggests the answer is probably not "find the right learning rate" but rather hierarchical timescale separation — different loop levels with different stability-flexibility profiles. Fast agents can be flexible; the slow overseer should be stable. The question of what gets stabilized in the slow loop is then the alignment question.</p>
+        </div>
+      </div>
+
+      <div class="qa-card">
+        <div class="qa-question">5. What speaks for/against biomimetics?</div>
+        <div class="qa-answer">
+          <p><strong>For:</strong> the brain is a richly studied existence proof that complex recurrent systems can produce stable goal-directed behavior; the mech interp methodology transfers substantially; the timescale separation principle is concrete and actionable; attractor-based analysis is mathematically mature.</p>
+          <p><strong>Against:</strong> the brain was shaped by evolution toward goals orthogonal to ours (see Limits); brains are systematically bad at things we need AI to be good at — formal logic, probability, long-horizon planning, resisting motivated reasoning; and the analogy risks anchoring us to brain-specific failure modes while missing AI-specific ones (context window saturation, attention sink behavior, reward hacking, sycophancy under RLHF). There's also the risk of importing complexity that is adaptive in biology but just costly in AI — not every biological mechanism solves a problem we have.</p>
+          <p>The healthy version of biomimetics is probably: borrow the <em>mathematical structures</em> (dynamical systems, attractor analysis, timescale separation) and the <em>methodological tools</em> (circuit analysis, probing), but be skeptical about importing specific architectural choices without understanding what problem they solve.</p>
+        </div>
+      </div>
+
+      <div class="qa-card">
+        <div class="qa-question">6. Best/worst case scenarios?</div>
+        <div class="qa-answer">
+          <p><strong>Best case:</strong> Temporal mech interp matures into a real methodology for looping systems — we can trace how goal representations evolve across iterations, identify when and why they drift, and detect misaligned attractors before they stabilize. Hierarchical oversight architectures, informed by the PFC analogy, provide genuine leverage: a slow overseer that is hard to bypass and whose internals are interpretable. Developmental alignment becomes a design principle — alignment properties get established during early training stages and are robustly maintained. The result is systems where the relevant causal structure is visible and auditable.</p>
+          <p><strong>Worst case:</strong> The brain analogy misleads us into expecting brain-like failures while AI systems fail in AI-specific ways we didn't anticipate. "Biologically inspired" architectures add complexity without safety. Attractor dynamics make misaligned goal representations <em>stable</em> — once the system converges on a subtly wrong attractor, it's self-reinforcing and hard to dislodge even after detection. The regress on oversight remains unsolved, so regulatory elements end up as theater. And we run out of the developmental window where alignment properties can be reliably instilled.</p>
+        </div>
+      </div>
+
+      <div class="qa-card">
+        <div class="qa-question">7. Other open threads <span class="qa-tag">speculative</span></div>
+        <div class="qa-answer">
+          <p><strong>Neuromodulation as inference-time steering.</strong> Dopamine and serotonin don't modify synaptic weights — they modulate the <em>gain</em> of ongoing neural computation. The AI analogue is inference-time activation steering (representation engineering), not RLHF. The key distinction: if the modulation signal is part of training, the model can optimize against it (reward hacking). If it's applied on top of a frozen trained model, it can't be trained around — though the question of who controls the steering vector, and whether that process is trustworthy, remains open. This might be more promising than it sounds: a lightweight alignment monitor that continuously steers activations, trained separately from the main model with a distinct objective.</p>
+          <p><strong>Developmental alignment.</strong> Biological neural systems establish different properties at different developmental stages, with "critical periods" after which certain features become relatively fixed. The hypothesis for AI: alignment properties instilled during early pretraining are woven into the representations everything else is built on, and are therefore more robust than the same properties instilled during fine-tuning. If the model's basic character — honesty, care about accuracy — is established before capabilities are fully developed, later capability growth is scaffolded onto an aligned foundation rather than onto a blank capability substrate. This also connects to hard-wiring vs. soft-wiring: some biological moral intuitions are remarkably cross-cultural (reluctance to harm infants, basic fairness), suggesting architectural rather than learned origins. Could some alignment properties be fixed at the architectural level rather than trained? And the sobering flip side: if critical periods close on wrong values, fixing them later is genuinely difficult — which means the window for getting developmental alignment right may be narrower than we'd like.</p>
+          <p><strong>Multi-scale credit assignment.</strong> How does the brain assign credit across widely separated timescales — rewarding actions taken minutes ago that only now produce an outcome? This is unsolved in neuroscience and directly relevant to training looping AI systems, where the relevant "action" and its consequence may be separated by many loop iterations.</p>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /#content -->
+</div><!-- /#main -->
+
+<script>
+  // ── Navigation ──
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  const pageLabel = document.getElementById('page-label');
+
+  const pageTitles = {
+    overview:   'Overview',
+    attractors: 'Attractor States',
+    binding:    'The Binding Problem',
+    hierarchy:  'Hierarchical Modulation',
+    'mech-interp': 'Mechanistic Interpretability',
+    limits:     'Limits of the Analogy',
+    'bio-stability': 'Biological Stability Mechanisms',
+    qa:         'Open Questions',
+  };
+
+  function navigateTo(pageId) {
+    pages.forEach(p => p.classList.remove('active'));
+    navItems.forEach(n => n.classList.remove('active'));
+
+    const targetPage = document.getElementById('page-' + pageId);
+    const targetNav  = document.querySelector('.nav-item[data-page="' + pageId + '"]');
+
+    if (targetPage) targetPage.classList.add('active');
+    if (targetNav)  targetNav.classList.add('active');
+
+    pageLabel.textContent = pageTitles[pageId] || pageId;
+    document.getElementById('content').scrollTop = 0;
+
+    // Re-render math in newly visible page
+    if (window.renderMathInElement) {
+      renderMathInElement(targetPage, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true},
+        ],
+        throwOnError: false,
+      });
+    }
+  }
+
+  navItems.forEach(btn => {
+    btn.addEventListener('click', () => navigateTo(btn.dataset.page));
+  });
+
+  // ── Mode toggle ──
+  const modeBtns = document.querySelectorAll('.mode-btn');
+
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      modeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.body.classList.remove('mode-conceptual', 'mode-technical');
+      document.body.classList.add('mode-' + btn.dataset.mode);
+    });
+  });
+
+  // ── Initial KaTeX render ──
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true},
+        ],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // KaTeX may load after DOMContentLoaded; retry after a delay
+  setTimeout(() => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true},
+        ],
+        throwOnError: false,
+      });
+    }
+  }, 800);
+</script>
+
+</body>
+</html>

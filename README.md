@@ -1,0 +1,1 @@
+A quick [exploration](https://isacsahlberg.github.io/neuro-ai-safety-exploration/) with Claude Sonnet 4.6 regarding Neuro AI Safety: what brain dynamics, attractor theory, and mechanistic interpretability might mean for aligning agentic AI systems.
